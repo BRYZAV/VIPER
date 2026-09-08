@@ -1,4 +1,4 @@
-# VIPER
+# VIPER VIral CaPture sEquencing Runner
 Snakemake Workflow for VirCapSeq <br>
 <img width="357" height="827" alt="pipeline_graph" src="https://github.com/user-attachments/assets/ef01a88a-1317-41f2-94ae-1eb9a9cef020" />
 
