@@ -1,6 +1,7 @@
 channels:
   - bioconda
 dependencies:
+  - snakemake =9.23.1
   - bbmap =39.81
   - blast =2.17.0
   - bowtie2 =2.5.5
