@@ -1,5 +1,8 @@
-samples: "bat_sample_list.txt" #Text file of sample names
+#Text file of sample name list
+samples: "rodent_oral_data_list.txt" 
 
-fastq_dir: "fastq_data" #Directory to Fastq files, path/to/directory
+#Directory to Fastq files, path/to/directory
+fastq_dir: "fastq_data" 
 
-bowtie_index: "bat_host_db/c_brachy" #Path/to/directory
+#Path/to/bowtie_index
+bowtie_index: "combined_ref_genomes/rat_shrew_genome" 
