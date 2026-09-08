@@ -1,0 +1,5 @@
+samples: "bat_sample_list.txt" #Text file of sample names
+
+fastq_dir: "fastq_data" #Directory to Fastq files, path/to/directory
+
+bowtie_index: "bat_host_db/c_brachy" #Path/to/directory
