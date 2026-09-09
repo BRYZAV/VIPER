@@ -14,7 +14,7 @@ To install the pipeline a conda environment will be created by using the environ
 `pip install pandas` <br>
 
 # Configuration
-To configure certain parameters and file paths of your choice, the `config.yaml` file will need to be adjusted by replacing some of the values. The source code (`Snakefile`) does NOT need any edits <br>
+To configure certain parameters and file paths of your choice, the `config.yaml` file will need to be adjusted by replacing some of the values. The source code (`Snakefile`) may be edited for the number of threads for each rule (will be changed in a later update) <br>
 
 # Submitting to a job scheduler (HPC)
 To submit the pipeline to your HPC, a shell script `snakemake_script.sh` has been provided for you, only adjustments need to be made are specifying the number of `--cores` available on your HPC and `SBATCH` requests <br>
