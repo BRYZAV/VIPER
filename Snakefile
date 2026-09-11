@@ -127,5 +127,5 @@ rule viral_search_stats:
         family="viral_stats/Viral_Family_counts.tsv"
     shell:
         "cat {input} | csvtk freq -t -f sscinames -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.species} && "
-        "cut -f 21 {input}/*tsv | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family "
+        "cut -f 21 {input} | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family "
         "| csvtk freq -t -f Family -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.family}"
