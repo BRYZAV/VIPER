@@ -10,9 +10,14 @@ samples = pd.read_table(config["samples"]).set_index("samples", drop=False)
 rule all: #the target files
     input:
         expand("viral_matches/{sample}_viral_matches.tsv", sample=samples.index),
+        # Create Fastqc filesa
+        expand("fastqc_results/{sample}_fastqc.html", sample=samples.index),
+        expand("fastqc_results/{sample}_fastqc.zip", sample=samples.index),
         # Aggregated stats produced by viral_search_stats
         "viral_stats/Viral_Species_counts.tsv",
-        "viral_stats/Viral_Family_counts.tsv"
+        "viral_stats/Viral_Family_counts.tsv",
+        #MultiQC Report
+        "MultiQC_report/MultiQC_report.html"
 
 
 rule fastp_filter:
@@ -22,9 +27,28 @@ rule fastp_filter:
         trim="trimmed_reads/{sample}_trimmed.fastq.gz",
         html="fastp_results/{sample}.html",
         json="fastp_results/{sample}.json"
-    threads: 12 
+    params:
+        min_read_length=config["min_read_length"],
+        min_mean_qual=config["min_mean_qual"]  
+    threads: 
+        config["fastp_threads"]
     shell: 
-        "fastp -i {input} -e 20 -l 50 -o {output.trim} -j {output.json} -h {output.html} -w {threads}"
+        "fastp -i {input} -e {params.min_mean_qual} -l {params.min_read_length} -o {output.trim} -j {output.json} -h {output.html} -w {threads}"
+
+
+rule fastqc_results:
+    input:
+        "trimmed_reads/{sample}_trimmed.fastq.gz"
+    output:
+        html="fastqc_results/{sample}_fastqc.html",
+        zip="fastqc_results/{sample}_fastqc.zip"
+    threads:
+        config["fastqc_threads"]
+    shell:
+        "mkdir -p fastqc_results/ && "
+        "fastqc {input} -t {threads} -o fastqc_results/ && "
+        "mv fastqc_results/{wildcards.sample}_trimmed_fastqc.html fastqc_results/{wildcards.sample}_fastqc.html && "
+        "mv fastqc_results/{wildcards.sample}_trimmed_fastqc.zip fastqc_results/{wildcards.sample}_fastqc.zip"
 
 
 rule bowtie2_map:
@@ -37,7 +61,8 @@ rule bowtie2_map:
         "logs/bowtie2/{sample}.log"
     params:
         bowtie_index=config["bowtie_index"]
-    threads: 24 
+    threads: 
+        config["bowtie_threads"]
     shell:
         "bowtie2 -x {params.bowtie_index} -U {input.fastq} -p {threads} --un-gz {output.gz} "
         "-S {output.sam} 2> {log}"
@@ -48,9 +73,12 @@ rule megahit_assembly:
         "host_filtered_data/unmapped_reads/unmapped_{sample}.fastq.gz"
     output:
         directory("megahit_results/{sample}_contigs")
-    threads: 24 
+    log:
+        "logs/megahit/{sample}.log"
+    threads:
+        config["megahit_threads"]
     shell:
-        "megahit -r {input} -o {output} -t {threads}" 
+        "megahit -r {input} -o {output} --out-prefix {wildcards.sample} -t {threads} 2> {log}" 
 
 
 rule bbwrap_map:
@@ -58,20 +86,13 @@ rule bbwrap_map:
         unmap="host_filtered_data/unmapped_reads/unmapped_{sample}.fastq.gz",
         contigs="megahit_results/{sample}_contigs"
     output:
-        sam="host_filtered_data/singleton/sam_files/{sample}_singleton_aln.sam.gz"
-    threads: 24 
+        sam="host_filtered_data/singleton/sam_files/{sample}_singleton_aln.sam.gz",
+        fastq="host_filtered_data/singleton/{sample}_singleton.fastq"
+    threads:
+        config["bbwrap_threads"]
     shell:
-        "bbwrap.sh ref={input.contigs}/final.contigs.fa in={input.unmap} out={output.sam} path={input.contigs}/bbwrap_index threads={threads}"
-
-
-rule fastq_convert:
-    input:
-	    "host_filtered_data/singleton/sam_files/{sample}_singleton_aln.sam.gz"
-    output:
-	    "host_filtered_data/singleton/{sample}_singleton.fasta"
-    shell:
-	    "samtools fastq -f 4 {input} | seqkit fq2fa -o {output}"
-
+        "bbwrap.sh ref={input.contigs}/{wildcards.sample}.contigs.fa in={input.unmap} out={output.sam} path={input.contigs}/bbwrap_index threads={threads} && "
+        "samtools fastq -f 4 {output.sam} > {output.fastq}"
 
 
 rule contig_diamond_search:
@@ -81,9 +102,10 @@ rule contig_diamond_search:
         "diamond_matches/contig/{sample}_dmnd_matches.tsv"
     log:
         "logs/diamond/contig/{sample}_diamond.log"
-    threads: 32 
+    threads:
+        config["diamond_threads"]
     shell:
-        "diamond blastx -q {input}/final.contigs.fa -d /90daydata/zedru/nr_db.dmnd -k 1 -p {threads} "
+        "diamond blastx -q {input}/{wildcards.sample}.contigs.fa -d /90daydata/zedru/nr_db.dmnd -k 1 -p {threads} "
         "--outfmt 6 qseqid sseqid pident evalue qcovhsp bitscore length mismatch gapopen qstart qend qlen qframe "
         "sstart send slen sscinames skingdoms sskingdoms sphylums staxids stitle slineages "
         "--header -o {output} 2> {log}"
@@ -92,12 +114,13 @@ rule contig_diamond_search:
 
 rule singleton_diamond_search:
     input:
-        "host_filtered_data/singleton/{sample}_singleton.fasta"
+        "host_filtered_data/singleton/{sample}_singleton.fastq"
     output:
         "diamond_matches/singleton/{sample}_dmnd_matches.tsv"
     log:
         "logs/diamond/singleton/{sample}_diamond.log"
-    threads: 32 
+    threads:
+        config["diamond_threads"]
     shell:
         "diamond blastx -q {input} -d /90daydata/zedru/nr_db.dmnd -k 1 -p {threads} "
         "--outfmt 6 qseqid sseqid pident evalue qcovhsp bitscore length mismatch gapopen qstart qend qlen qframe "
@@ -129,3 +152,15 @@ rule viral_search_stats:
         "cat {input} | csvtk freq -t -f sscinames -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.species} && "
         "cut -f 21 {input} | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family "
         "| csvtk freq -t -f Family -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.family}"
+
+rule multiqc_report:
+    input:
+        expand("fastqc_results/{sample}_fastqc.zip", sample=samples.index),
+        expand("fastp_results/{sample}.json", sample=samples.index),
+        expand("logs/bowtie2/{sample}.log", sample=samples.index),
+        expand("logs/megahit/{sample}.log", sample=samples.index)
+    output:
+        html="MultiQC_report/MultiQC_report.html"
+    shell:
+        "multiqc {input} -n MultiQC_report -o MultiQC_report/"
+

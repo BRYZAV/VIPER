@@ -1,8 +1,28 @@
 #Text file of sample name list
-samples: "rodent_oral_data_list.txt" 
+samples: "Rodent_oral_data_list.txt" 
 
 #Directory to Fastq files, path/to/directory
 fastq_dir: "fastq_data" 
 
 #Path/to/bowtie_index
-bowtie_index: "combined_ref_genomes/rat_shrew_genome" 
+bowtie_index: "../BDRB_rodent_oral_swabs/combined_ref_genomes/rat_shrew_genome" 
+
+
+############## Fastp ##############
+
+min_read_length: 50
+min_mean_qual: 20
+
+###################################
+
+
+############## THREADS ##############
+
+fastqc_threads: 12
+fastp_threads: 12
+bowtie_threads: 24
+megahit_threads: 24
+bbwrap_threads: 24
+diamond_threads: 32
+
+###################################
