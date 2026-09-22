@@ -1,4 +1,4 @@
-#Text file of sample name list
+#Text file of sample name list, path/to/file
 samples: "Rodent_oral_data_list.txt" 
 
 #Directory to Fastq files, path/to/directory
