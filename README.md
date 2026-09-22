@@ -4,7 +4,7 @@ Snakemake Workflow for VirCapSeq <br>
 
 
 # Installation
-To install the pipeline a conda environment will be created by using the environment.yaml file, which will install all software necessary for this pipeline, make sure `environment.yaml` `Snakefile` `snakemake_script.sh` are in the same directory <br>
+To install the pipeline a conda environment will be created by using the environment.yaml file, which will install all software necessary for this pipeline, make sure `environment.yaml` `config.yaml` `Snakefile` `snakemake_script.sh` are in the same directory <br>
 
 ## Install and activate the conda environment
 `conda env create --name snakemake_vircapseq --file environment.yaml` <br>
