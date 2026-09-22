@@ -146,10 +146,14 @@ rule viral_search_stats:
         # all per-sample viral match TSVs
         expand("viral_matches/{sample}_viral_matches.tsv", sample=samples.index)
     output:
+        counts=temp("viral_stats/Viral_counts.tsv"),
+        taxids=temp("viral_stats/Viral_Taxonomy.tsv"),
         species="viral_stats/Viral_Species_counts.tsv",
         family="viral_stats/Viral_Family_counts.tsv"
     shell:
-        "cat {input} | csvtk freq -t -f sscinames -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.species} && "
+        "cat {input} | csvtk freq -t -f sscinames -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.counts} && "
+        "cat {input} | csvtk freq -t -f staxids -n -r | cut -f 1 | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family > {output.taxids} && "
+        "paste {output.counts} {output.taxids} > {output.species} && "
         "cut -f 21 {input} | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family "
         "| csvtk freq -t -f Family -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.family}"
 
