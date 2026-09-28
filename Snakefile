@@ -151,7 +151,7 @@ rule viral_search_stats:
         species="viral_stats/Viral_Species_counts.tsv",
         family="viral_stats/Viral_Family_counts.tsv"
     shell:
-        "cat {input} | csvtk freq -t -f sscinames -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.counts} && "
+        "cat {input} | csvtk freq -t -f staxids,sscinames -n -r | csvtk cut -t -f -staxids | csvtk rename -t -f frequency -n Sequence_Counts > {output.counts} && "
         "cat {input} | csvtk freq -t -f staxids,sscinames -n -r | cut -f 1 | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family > {output.taxids} && "
         "paste {output.counts} {output.taxids} > {output.species} && "
         "cut -f 21 {input} | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family "
