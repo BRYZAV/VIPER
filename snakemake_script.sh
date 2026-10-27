@@ -12,4 +12,5 @@
 module load miniconda
 source activate snakemake_rodent_data
 
-snakemake --cores 2000 --latency-wait 60 --rerun-incomplete --nolock 
+#--keep-going lets other samples finish if one sample fails
+snakemake --cores 2000 --latency-wait 60 --rerun-incomplete --keep-going --nolock 
