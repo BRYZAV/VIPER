@@ -65,7 +65,7 @@ rule bowtie2_map:
         config["bowtie_threads"]
     shell:
         "bowtie2 -x {params.bowtie_index} -U {input.fastq} -p {threads} --un-gz {output.gz} "
-        "-S {output.sam} 2> {log}"
+        "-S {output.sam} 2> {log} && gzip -f {output.sam}"
 
 
 rule megahit_assembly:
@@ -92,7 +92,7 @@ rule bbwrap_map:
         config["bbwrap_threads"]
     shell:
         "bbwrap.sh ref={input.contigs}/{wildcards.sample}.contigs.fa in={input.unmap} out={output.sam} path={input.contigs}/bbwrap_index threads={threads} && "
-        "samtools fastq -f 4 {output.sam} > {output.fastq}"
+        "samtools fastq -f 4 {output.sam} > {output.fastq} && gzip -f {output.fastq}"
 
 
 rule contig_diamond_search:
