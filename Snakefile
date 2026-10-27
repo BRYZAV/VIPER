@@ -114,7 +114,7 @@ rule contig_diamond_search:
 
 rule singleton_diamond_search:
     input:
-        "host_filtered_data/singleton/{sample}_singleton.fastq"
+        "host_filtered_data/singleton/{sample}_singleton.fastq.gz"
     output:
         "diamond_matches/singleton/{sample}_dmnd_matches.tsv"
     log:
