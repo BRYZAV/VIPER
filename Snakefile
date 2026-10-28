@@ -56,7 +56,8 @@ rule bowtie2_map:
         fastq="trimmed_reads/{sample}_trimmed.fastq.gz",
     output:
         gz="host_filtered_data/unmapped_reads/unmapped_{sample}.fastq.gz",
-        sam="host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam"
+        sam=tmp("host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam"),
+        sam_gz="host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam.gz"
     log:
         "logs/bowtie2/{sample}.log"
     params:
@@ -65,7 +66,7 @@ rule bowtie2_map:
         config["bowtie_threads"]
     shell:
         "bowtie2 -x {params.bowtie_index} -U {input.fastq} -p {threads} --un-gz {output.gz} "
-        "-S {output.sam} 2> {log} && gzip -f {output.sam}"
+        "-S {output.sam} 2> {log} && gzip -f {output.sam_gz}"
 
 
 rule megahit_assembly:
@@ -87,12 +88,13 @@ rule bbwrap_map:
         contigs="megahit_results/{sample}_contigs"
     output:
         sam="host_filtered_data/singleton/sam_files/{sample}_singleton_aln.sam.gz",
-        fastq="host_filtered_data/singleton/{sample}_singleton.fastq"
+        fastq=tmp("host_filtered_data/singleton/{sample}_singleton.fastq"),
+        fastq_gz="host_filtered_data/singleton/{sample}_singleton.fastq.gz"
     threads:
         config["bbwrap_threads"]
     shell:
         "bbwrap.sh ref={input.contigs}/{wildcards.sample}.contigs.fa in={input.unmap} out={output.sam} path={input.contigs}/bbwrap_index threads={threads} && "
-        "samtools fastq -f 4 {output.sam} > {output.fastq} && gzip -f {output.fastq}"
+        "samtools fastq -f 4 {output.sam} > {output.fastq} && gzip -f {output.fastq_gz}"
 
 
 rule contig_diamond_search:
