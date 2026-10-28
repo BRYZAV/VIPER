@@ -56,7 +56,7 @@ rule bowtie2_map:
         fastq="trimmed_reads/{sample}_trimmed.fastq.gz",
     output:
         gz="host_filtered_data/unmapped_reads/unmapped_{sample}.fastq.gz",
-        sam=tmp("host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam"),
+        sam=temp("host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam"),
         sam_gz="host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam.gz"
     log:
         "logs/bowtie2/{sample}.log"
@@ -88,7 +88,7 @@ rule bbwrap_map:
         contigs="megahit_results/{sample}_contigs"
     output:
         sam="host_filtered_data/singleton/sam_files/{sample}_singleton_aln.sam.gz",
-        fastq=tmp("host_filtered_data/singleton/{sample}_singleton.fastq"),
+        fastq=temp("host_filtered_data/singleton/{sample}_singleton.fastq"),
         fastq_gz="host_filtered_data/singleton/{sample}_singleton.fastq.gz"
     threads:
         config["bbwrap_threads"]
