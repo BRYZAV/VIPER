@@ -65,7 +65,7 @@ rule bowtie2_map:
         config["bowtie_threads"]
     shell:
         "bowtie2 -x {params.bowtie_index} -U {input.fastq} -p {threads} --un-gz {output.gz} "
-        "-S {output.sam} 2> {log}"
+        "--no-unal -S {output.sam} 2> {log}"
 
 
 rule megahit_assembly:
