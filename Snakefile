@@ -17,7 +17,10 @@ rule all: #the target files
         "viral_stats/Viral_Species_counts.tsv",
         "viral_stats/Viral_Family_counts.tsv",
         #MultiQC Report
-        "MultiQC_report/MultiQC_report.html"
+        "MultiQC_report/MultiQC_report.html",
+        expand("esviritu/" + config["esviritu_project"] + "/{sample}.detected_virus.info.tsv",
+               sample=samples.index),
+        "esviritu/summary/" + config["esviritu_project"] + ".batch_detected_viruses.html"
 
 
 rule fastp_filter:
@@ -56,7 +59,7 @@ rule bowtie2_map:
         fastq="trimmed_reads/{sample}_trimmed.fastq.gz",
     output:
         gz="host_filtered_data/unmapped_reads/unmapped_{sample}.fastq.gz",
-        sam="host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam"
+        sam="host_filtered_data/unmapped_reads/sam_files/{sample}_aln.sam.gz"
     log:
         "logs/bowtie2/{sample}.log"
     params:
@@ -64,8 +67,8 @@ rule bowtie2_map:
     threads: 
         config["bowtie_threads"]
     shell:
-        "bowtie2 -x {params.bowtie_index} -U {input.fastq} -p {threads} --un-gz {output.gz} "
-        "-S {output.sam} 2> {log}"
+        "bowtie2 --large-index -x {params.bowtie_index} -U {input.fastq} -p {threads} --un-gz {output.gz} "
+        "2> {log} | gzip > {output.sam}"
 
 
 rule megahit_assembly:
@@ -78,7 +81,50 @@ rule megahit_assembly:
     threads:
         config["megahit_threads"]
     shell:
-        "megahit -r {input} -o {output} --out-prefix {wildcards.sample} -t {threads} 2> {log}" 
+        "megahit -r {input} -o {output} --out-prefix {wildcards.sample} -t {threads} 2> {log}"
+
+
+rule esviritu_screen:
+    input:
+        "host_filtered_data/unmapped_reads/unmapped_{sample}.fastq.gz"
+    output:
+        "esviritu/" + config["esviritu_project"] + "/{sample}.detected_virus.info.tsv"
+    log:
+        "logs/esviritu/{sample}.log"
+    params:
+        db=config["esviritu_db"],
+        envbin=config["esviritu_bin"],
+        project=config["esviritu_project"],
+        workdir="esviritu"
+    threads:
+        config["esviritu_threads"]
+    shell:
+        "export PATH={params.envbin}:$PATH && "
+        "EsViritu -r {input} -s {wildcards.sample} -o {params.project} "
+        "-wd {params.workdir} -p unpaired -q False -f False "
+        "--db {params.db} -t {threads} > {log} 2>&1"
+
+
+rule esviritu_batch_summary:
+    input:
+        expand("esviritu/" + config["esviritu_project"] + "/{sample}.detected_virus.info.tsv",
+               sample=samples.index)
+    output:
+        info="esviritu/summary/" + config["esviritu_project"] + ".detected_virus.info.tsv",
+        asm="esviritu/summary/" + config["esviritu_project"] + ".detected_virus.assembly_summary.tsv",
+        tax="esviritu/summary/" + config["esviritu_project"] + ".tax_profile.tsv",
+        html="esviritu/summary/" + config["esviritu_project"] + ".batch_detected_viruses.html"
+    log:
+        "logs/esviritu/batch_summary.log"
+    params:
+        resultsdir="esviritu/" + config["esviritu_project"],
+        outdir="esviritu/summary",
+        envbin=config["esviritu_bin"],
+        project=config["esviritu_project"]
+    shell:
+        "export PATH={params.envbin}:$PATH && "
+        "summarize_esv_runs {params.resultsdir} --outdir {params.outdir} > {log} 2>&1 && "
+        "mv {params.outdir}/{params.project}_EsViritu_project_reactable.html {output.html}"
 
 
 rule bbwrap_map:
@@ -151,8 +197,8 @@ rule viral_search_stats:
         species="viral_stats/Viral_Species_counts.tsv",
         family="viral_stats/Viral_Family_counts.tsv"
     shell:
-        "cat {input} | csvtk freq -t -f staxids,sscinames -n -r | csvtk cut -t -f -staxids | csvtk rename -t -f frequency -n Sequence_Counts > {output.counts} && "
-        "cat {input} | csvtk freq -t -f staxids,sscinames -n -r | cut -f 1 | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family > {output.taxids} && "
+        "cat {input} | csvtk freq -t -f staxids,sscinames -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.counts} && "
+        "cat {input} | csvtk freq -t -f staxids,staxids -n -r | cut -f 1 | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family > {output.taxids} && "
         "paste {output.counts} {output.taxids} > {output.species} && "
         "cut -f 21 {input} | tail -n +2 | taxonkit reformat -I 1 -f {{f}} | csvtk -t add-header -n staxids,Family "
         "| csvtk freq -t -f Family -n -r | csvtk rename -t -f frequency -n Sequence_Counts > {output.family}"

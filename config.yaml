@@ -1,17 +1,31 @@
 #Text file of sample name list, path/to/file
-samples: "Rodent_oral_data_list.txt" 
+samples: "bat_rectal_samples.txt" 
 
 #Directory to Fastq files, path/to/directory
 fastq_dir: "fastq_data" 
 
 #Path/to/bowtie_index
-bowtie_index: "../BDRB_rodent_oral_swabs/combined_ref_genomes/rat_shrew_genome" 
+bowtie_index: "bat_ref/bat_human_index" 
 
 
 ############## Fastp ##############
 
 min_read_length: 50
 min_mean_qual: 20
+
+###################################
+
+
+############## EsViritu ##############
+
+#Path/to/EsViritu database directory
+esviritu_db: "/90daydata/zedru/esviritu_DB/v3.2.4"
+
+#Path/to/EsViritu env bin - supplies EsViritu, minimap2, samtools, fastp and Rscript
+esviritu_bin: "~/.conda/envs/EsViritu/bin"
+
+#Name of the per-sample results directory, and the prefix on every batch summary file
+esviritu_project: "BDRB_bat_rectal_EsViritu1"
 
 ###################################
 
@@ -24,5 +38,6 @@ bowtie_threads: 24
 megahit_threads: 24
 bbwrap_threads: 24
 diamond_threads: 32
+esviritu_threads: 16
 
 ###################################
